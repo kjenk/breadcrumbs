@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Breadcrumbs</title>
+
+	</head>
+	<body>
+
+
+    <link rel="stylesheet" type="text/css" href="/libs/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="libs/global.css">
+     <div id="header">
+            <!--<button id="nav-drop">---</button>-->
+            <p id="brand">
+                <a id="brand-link" href="/">BreadCrumbs</a>
+            </p>
+      </div>
+
+    <div id="content">
+        <!--<button id="btn-init">get location</button>
+        <button id="btn-stop">stop location</button>-->
+        <div id="output">
+
+        </div>
+
+        <form action="/textmsg" method="post">
+            <input type="text" name="senderName" class="input-form" placeholder="Your Name">
+            </br>
+            <input type="text" name="phone" class="input-form" placeholder="Your Friend's Number">
+            </br>
+            <input type="hidden" name="uid">
+            </br>
+            <input class="btn btn-huge" type="submit" value="Leave a Trail!" id="submit-btn">
+        </form>
+    </div>
+
+    
+    <script src="libs/jquery-1.10.2.min.js"></script>  
+    <script src="/socket.io/lib/socket.io.js"></script>
+
+
+    <script>
+    var hostname = window.location.hostname;
+      var socket = io.connect(hostname);
+      // socket.emit('hostname_to_server', {name: hostname});
+      var uid;
+      socket.on('news', function (data) {
+        uid = document.querySelector('[name=uid]').value = data.uid;
+        console.log(data);
+      });
+
+    $(document.body).on('submit', 'form', function(e) {
+        initiate_watchlocation();
+        e.preventDefault();
+        var $this = $(this);
+        $this.hide();
+        $.post($this.attr('action'), $this.serialize()).then(function(resp) {
+            console.log('done');
+            $this.remove();
+        }, function() {
+            $this.show();
+        });
+    });
+
+   // $("#btn-init").click(function(){initiate_watchlocation()});  
+    //$("#btn-stop").click(function(){stop_watchlocation()});  
+
+    var watchProcess = null;
+
+    function initiate_watchlocation() {
+        if (watchProcess == null) {
+            watchProcess = navigator.geolocation.watchPosition(handle_geolocation_query, handle_errors, {enableHighAccuracy:true});
+        }
+    }
+
+    function stop_watchlocation() {
+        if (watchProcess != null)
+        {
+            navigator.geolocation.clearWatch(watchProcess);
+            watchProcess = null;
+        }
+    }
+
+    function handle_errors(error)  
+    {  
+        switch(error.code)  
+        {  
+            case error.PERMISSION_DENIED: alert("user did not share geolocation data");  
+            break;  
+            case error.POSITION_UNAVAILABLE: alert("could not detect current position");  
+            break;  
+            case error.TIMEOUT: alert("retrieving position timedout");  
+            break;  
+            default: alert("unknown error");  
+            break;  
+        }  
+    }  
+
+    function handle_geolocation_query(position) {  
+        var text = "Latitude: "  + position.coords.latitude  + "<br/>" +  
+                   "Longitude: " + position.coords.longitude + "<br/>" +  
+                   "Accuracy: "  + position.coords.accuracy  + "m<br/>" +  
+                   "Time: " + new Date(position.timestamp);
+        $("#output").empty().append("<p>" + text + "</p>")
+       /* var image_url = "http://maps.google.com/maps/api/staticmap?sensor=false&center=" + position.coords.latitude + ',' + position.coords.longitude +  
+                        "&zoom=14&size=300x400&markers=color:blue|label:S|" + position.coords.latitude + ',' + position.coords.longitude;  
+        jQuery("#map").remove();
+        jQuery(document.body).append(  
+            jQuery(document.createElement("img")).attr("src", image_url).attr('id','map')
+        );*/
+        socket.emit('location_from_sender', { lat: position.coords.latitude, lon: position.coords.longitude });
+    }
+
+    </script> 
+
+
+    <script type="text/javascript">
+    dynamicSize();
+    
+    //Dynamic Sizing
+    function dynamicSize(){
+      var deviceWid = $(window).width();
+      var buttonWid = $("#nav-drop").height();
+      var navHeight = $("#header").height();
+      $("#nav-drop").width(buttonWid);
+
+      $("#content").css("top", navHeight + "px");
+
+      $("#brand").css("font-size",((3*navHeight)/4) +"px");
+      $("#brand").css("padding", ((3*navHeight)/8)+"px");
+    }
+
+    /*$("#btn-init").click(function(){
+      $("#btn-init").addClass("hide");
+      $("#btn-stop").removeClass("hide");
+      $("#information").removeClass("hide");
+      $("#compassHousing").removeClass("hide");
+    })
+
+    $("#btn-stop").click(function(){
+      $("#content").html("<h2>You've lost the trail!</h2></br><p>Get a new link to help you find it again.</p>");
+      $("#compassHousing").addClass("hide");
+    })*/
+
+
+    </script>
+
+
+
+	</body>
+</html>
